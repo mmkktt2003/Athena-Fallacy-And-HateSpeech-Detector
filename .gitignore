@@ -1,0 +1,14 @@
+*.bin
+*.pt
+*.pth
+*.safetensors
+checkpoints/
+resources/
+ElectraFinalModelWithBestParams/
+results_electra_multitask/
+*.csv
+__pycache__/
+.venv/
+venv/
+.ipynb_checkpoints/
+.DS_Store
