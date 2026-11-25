@@ -121,9 +121,10 @@ def compute_metrics(eval_pred):
     return metrics
 
 
-def create_confusion_matrix(y_true, y_pred, class_names, title):
-    """Create and save a confusion matrix"""
-    cm = confusion_matrix(y_true, y_pred)
+def create_confusion_matrix(y_true, y_pred, class_names, title, output_dir="."):
+    """Create and save a confusion matrix as a PNG in output_dir"""
+    # Pass every class index so the matrix matches class_names even if a class is missing from the test split
+    cm = confusion_matrix(y_true, y_pred, labels=list(range(len(class_names))))
     plt.figure(figsize=(10, 8))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                 xticklabels=class_names, yticklabels=class_names)
@@ -131,7 +132,8 @@ def create_confusion_matrix(y_true, y_pred, class_names, title):
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     plt.tight_layout()
-    plt.savefig(f"{title.replace(' ', '_').lower()}.png")
+    os.makedirs(output_dir, exist_ok=True)
+    plt.savefig(os.path.join(output_dir, f"{title.replace(' ', '_').lower()}.png"))
     plt.close()
 
 
@@ -142,6 +144,8 @@ def collect_task_predictions(model, dataset, device, task):
     """
     label_key = f"{task}_labels"
     logit_key = f"{task}_logits"
+
+    model.eval()  # disable dropout so predictions are deterministic
 
     preds, labels = [], []
     for example in dataset:

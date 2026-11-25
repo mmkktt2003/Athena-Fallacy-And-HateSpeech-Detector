@@ -154,16 +154,16 @@ def main():
     for name, idx in fallacy_map.items():
         fallacy_names_list[idx] = name
     create_confusion_matrix(f_labels, f_preds, fallacy_names_list,
-                            "Fallacy Classification Confusion Matrix")
+                            "Fallacy Classification Confusion Matrix", args.output_dir)
 
     h_labels, h_preds = collect_task_predictions(model, test_ds, device, "hate")
     hate_names_list = [""] * len(hate_map)
     for name, idx in hate_map.items():
         hate_names_list[idx] = name
     create_confusion_matrix(h_labels, h_preds, hate_names_list,
-                            "Hate Speech Classification Confusion Matrix")
+                            "Hate Speech Classification Confusion Matrix", args.output_dir)
 
-    print("Confusion matrices saved to current directory.")
+    print(f"Confusion matrices saved to {args.output_dir}")
 
     print("Collecting mispredictions for LIME analysis...")
     mispredictions_path = os.path.join(args.output_dir, "mispredictions")

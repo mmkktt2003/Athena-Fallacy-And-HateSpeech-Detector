@@ -5,7 +5,9 @@ import os
 
 import torch
 from torch import nn
-from transformers import ElectraModel
+from transformers import ElectraConfig, ElectraModel
+
+ENCODER_CONFIG_FILE = "electra_config.json"
 
 
 class TaskSpecificHead(nn.Module):
@@ -26,9 +28,15 @@ class TaskSpecificHead(nn.Module):
 
 
 class ElectraForMultiTaskClassification(nn.Module):
-    def __init__(self, model_name, num_fallacy_labels, num_hate_labels, task_weights=None, dropout_rate=0.1):
+    def __init__(self, model_name, num_fallacy_labels, num_hate_labels, task_weights=None, dropout_rate=0.1,
+                 encoder_config=None):
         super().__init__()
-        self.electra = ElectraModel.from_pretrained(model_name)
+        if encoder_config is not None:
+            # Build the encoder architecture only; weights come from the saved state dict.
+            # This avoids re-downloading the pretrained base model when loading a trained model.
+            self.electra = ElectraModel(encoder_config)
+        else:
+            self.electra = ElectraModel.from_pretrained(model_name)
         hidden_size = self.electra.config.hidden_size
 
         # Use task-specific heads instead of simple layer norm + linear layers
@@ -144,6 +152,8 @@ class ElectraForMultiTaskClassification(nn.Module):
         }
         with open(os.path.join(save_directory, "config.json"), "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
+        # Save the encoder architecture so the model can be rebuilt offline
+        self.electra.config.to_json_file(os.path.join(save_directory, ENCODER_CONFIG_FILE))
 
     @classmethod
     def from_pretrained(cls, load_directory):
@@ -154,11 +164,20 @@ class ElectraForMultiTaskClassification(nn.Module):
 
             # Create model with saved configuration
             task_weights = config.get("task_weights", None)
+
+            # Models saved with this version include the encoder config, so no download is needed.
+            # Older saved models fall back to downloading the base model named in config.json.
+            encoder_config = None
+            encoder_config_path = os.path.join(load_directory, ENCODER_CONFIG_FILE)
+            if os.path.exists(encoder_config_path):
+                encoder_config = ElectraConfig.from_json_file(encoder_config_path)
+
             model = cls(
                 config["model_name"],
                 config["num_fallacy_labels"],
                 config["num_hate_labels"],
-                task_weights
+                task_weights,
+                encoder_config=encoder_config
             )
 
             # Load weights

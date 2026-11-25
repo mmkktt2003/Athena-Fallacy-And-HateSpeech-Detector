@@ -12,3 +12,9 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 .DS_Store
+
+# Label maps written to the working directory during training
+fallacy_label_map.json
+hate_label_map.json
+.pytest_cache/
+data/
